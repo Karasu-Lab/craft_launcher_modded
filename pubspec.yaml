@@ -1,6 +1,6 @@
 name: craft_launcher_modded
 description: "A Dart package for launching Minecraft Java Edition with mod loaders such as Fabric. This library extends the `craft_launcher_core` package to provide additional functionality for modded Minecraft instances."
-version: 0.0.2
+version: 0.0.3
 homepage: https://www.karasu256.com
 
 environment:
@@ -11,14 +11,14 @@ dependencies:
   flutter:
     sdk: flutter
 
-  mcid_connect: ^0.0.4
+  mcid_connect: ^0.0.5
   json_serializable: ^6.9.5
   json_annotation: ^4.9.0
   path: ^1.9.1
   http: ^1.4.0
   archive: 4.0.7
   crypto: ^3.0.6
-  craft_launcher_core: ^0.0.7
+  craft_launcher_core: ^0.0.8
 
 dev_dependencies:
   flutter_test:

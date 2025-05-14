@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
 /// Helper class for Java-related operations
@@ -56,8 +57,7 @@ class JavaHelper {
       if (Platform.isWindows) {
         final process = await Process.run('powershell.exe', [
           '-Command',
-          "Add-Type -AssemblyName System.IO.Compression.FileSystem; " +
-              "[System.IO.Compression.ZipFile]::ExtractToDirectory('$jarPath', '$extractDir')",
+          "Add-Type -AssemblyName System.IO.Compression.FileSystem; " "[System.IO.Compression.ZipFile]::ExtractToDirectory('$jarPath', '$extractDir')",
         ]);
         return process.exitCode == 0;
       } else {
@@ -70,7 +70,7 @@ class JavaHelper {
         return process.exitCode == 0;
       }
     } catch (e) {
-      print('Error extracting JAR as ZIP: $e');
+      debugPrint('Error extracting JAR as ZIP: $e');
       return false;
     }
   }
@@ -158,7 +158,7 @@ class JavaHelper {
         await tempDir.delete(recursive: true);
       }
     } catch (e) {
-      print('Error extracting module name: $e');
+      debugPrint('Error extracting module name: $e');
     }
 
     return null;
@@ -213,7 +213,7 @@ class JavaHelper {
         await tempDir.delete(recursive: true);
       }
     } catch (e) {
-      print('Error extracting module version: $e');
+      debugPrint('Error extracting module version: $e');
     }
 
     return null;

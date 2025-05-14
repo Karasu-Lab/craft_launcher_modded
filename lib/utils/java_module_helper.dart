@@ -76,7 +76,7 @@ class JavaModuleHelper {
       if (filePath.contains('org/ow2/asm/')) {
         if (fileName.startsWith('asm-')) {
           final subModule = fileName.split('-')[1].split('.')[0];
-          return 'org.objectweb.asm.' + subModule;
+          return 'org.objectweb.asm.$subModule';
         }
         return 'org.objectweb.asm';
       }

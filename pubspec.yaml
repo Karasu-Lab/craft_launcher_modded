@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  mcid_connect: ^0.0.3
+  mcid_connect: ^0.0.4
   json_serializable: ^6.9.5
   json_annotation: ^4.9.0
   path: ^1.9.1

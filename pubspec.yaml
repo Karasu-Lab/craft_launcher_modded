@@ -18,7 +18,7 @@ dependencies:
   http: ^1.4.0
   archive: 4.0.7
   crypto: ^3.0.6
-  craft_launcher_core: ^0.0.6
+  craft_launcher_core: ^0.0.7
 
 dev_dependencies:
   flutter_test:

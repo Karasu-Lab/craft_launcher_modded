@@ -20,6 +20,12 @@ dependencies:
   crypto: ^3.0.6
   craft_launcher_core: ^0.0.9
 
+dependency_overrides:
+  mcid_connect:
+    path: ../minecraft_auth
+  craft_launcher_core:
+    path: ../craft_launcher_core
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

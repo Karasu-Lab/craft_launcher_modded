@@ -12,6 +12,14 @@ abstract class AbstractModdedLauncher extends VanillaLauncher
     required super.javaDir,
     required super.profiles,
     required super.activeProfile,
+    required super.minecraftAuth,
+    required super.minecraftAccountProfile,
+    super.launcherName,
+    super.launcherVersion,
+    super.microsoftAccount,
+    super.onDownloadProgress,
+    super.onOperationProgress,
+    super.progressReportRate,
   });
 
   @override

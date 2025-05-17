@@ -7,8 +7,6 @@ import 'package:craft_launcher_core/processes/process_manager.dart';
 import 'package:craft_launcher_modded/abstract_modded_launcher.dart';
 import 'package:craft_launcher_modded/models/fabric/fabric_version_info.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mcid_connect/data/auth/microsoft/microsoft_account.dart';
-import 'package:mcid_connect/data/profile/minecraft_account_profile.dart';
 import 'package:path/path.dart' as p;
 
 class FabricLauncher extends AbstractModdedLauncher {
@@ -19,14 +17,14 @@ class FabricLauncher extends AbstractModdedLauncher {
     required super.javaDir,
     required super.profiles,
     required super.activeProfile,
-    MinecraftAccountProfile? minecraftAccountProfile,
-    MicrosoftAccount? microsoftAccount,
-    MinecraftAuth? minecraftAuth,
-    DownloadProgressCallback? onDownloadProgress,
-    OperationProgressCallback? onOperationProgress,
-    int progressReportRate = 10,
-    String launcherName = 'CraftLauncher',
-    String launcherVersion = '1.0.0',
+    required super.minecraftAuth,
+    required super.minecraftAccountProfile,
+    super.launcherName,
+    super.launcherVersion,
+    super.microsoftAccount,
+    super.onDownloadProgress,
+    super.onOperationProgress,
+    super.progressReportRate,
   });
 
   @override

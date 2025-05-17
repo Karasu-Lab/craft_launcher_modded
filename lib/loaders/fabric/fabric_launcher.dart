@@ -12,6 +12,24 @@ import 'package:path/path.dart' as p;
 class FabricLauncher extends AbstractModdedLauncher {
   final Map<String, FabricVersionInfo> _fabricVersionCache = {};
 
+  // Base URLs and constants
+  final String _mavenBaseUrl = 'https://maven.fabricmc.net/';
+  final String _fabricMainClass =
+      'net.fabricmc.loader.impl.launch.knot.KnotClient';
+  final String _fabricTweakClass =
+      'net.fabricmc.loader.impl.launch.knot.KnotClient';
+  final String _fabricPrefix = 'fabric-loader-';
+  final String _launcherName = 'craft-fabric';
+  final String _launcherVersion = '1.0.0';
+
+  // Getters for constants
+  String get mavenBaseUrl => _mavenBaseUrl;
+  String get fabricMainClass => _fabricMainClass;
+  String get fabricTweakClass => _fabricTweakClass;
+  String get fabricPrefix => _fabricPrefix;
+  String get launcherName => _launcherName;
+  String get launcherVersion => _launcherVersion;
+
   FabricLauncher({
     required super.gameDir,
     required super.javaDir,
@@ -36,7 +54,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     }
 
     String inheritsFrom = versionInfo?.inheritsFrom ?? versionInfo!.id;
-    if (!versionId.startsWith('fabric-loader-')) {
+    if (!versionId.startsWith(fabricPrefix)) {
       return;
     }
 
@@ -82,7 +100,7 @@ class FabricLauncher extends AbstractModdedLauncher {
       return _fabricVersionCache[id] as T?;
     }
 
-    if (!id.startsWith('fabric-loader-')) {
+    if (!id.startsWith(fabricPrefix)) {
       debugPrint(
         'Fabric: Not a Fabric version, returning original version info',
       );
@@ -159,15 +177,15 @@ class FabricLauncher extends AbstractModdedLauncher {
           fabricLibraries.add(
             FabricLibrary(
               name: 'net.fabricmc:fabric-loader:$loaderVersion',
-              url: 'https://maven.fabricmc.net/',
+              url: mavenBaseUrl,
             ),
           );
 
           final fabricVersionInfo = FabricVersionInfo(
             id: id,
             inheritsFrom: inheritsFrom,
-            type: 'release',
-            mainClass: 'net.fabricmc.loader.impl.launch.knot.KnotClient',
+            type: versionInfo.type,
+            mainClass: fabricMainClass,
             arguments: parentVersionInfo.arguments,
             minecraftArguments: parentVersionInfo.minecraftArguments,
             assetIndex: parentVersionInfo.assetIndex,
@@ -225,7 +243,7 @@ class FabricLauncher extends AbstractModdedLauncher {
               await downloadLibrary(
                 coordinates,
                 libraryPath,
-                'https://maven.fabricmc.net/',
+                mavenBaseUrl,
                 library.url,
               );
               if (await File(libraryPath).exists()) {
@@ -320,7 +338,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     String versionId,
     T versionInfo,
   ) async {
-    if (!versionId.startsWith('fabric-loader-')) {
+    if (!versionId.startsWith(fabricPrefix)) {
       return false;
     }
 
@@ -338,7 +356,7 @@ class FabricLauncher extends AbstractModdedLauncher {
 
   @override
   String? getCustomAssetIndexPath(String versionId, String assetIndex) {
-    if (!versionId.startsWith('fabric-loader-')) {
+    if (!versionId.startsWith(fabricPrefix)) {
       return null;
     }
 
@@ -370,7 +388,7 @@ class FabricLauncher extends AbstractModdedLauncher {
   Future<String> getAssetIndex(String versionId) async {
     debugPrint('Fabric: Getting asset index for $versionId');
 
-    if (!versionId.startsWith('fabric-loader-')) {
+    if (!versionId.startsWith(fabricPrefix)) {
       return super.getAssetIndex(versionId);
     }
 
@@ -417,7 +435,7 @@ class FabricLauncher extends AbstractModdedLauncher {
   ) async {
     debugPrint('Fabric: Customizing Java arguments for $versionId');
 
-    if (!versionId.startsWith('fabric-loader-')) {
+    if (!versionId.startsWith(fabricPrefix)) {
       return versionInfo.arguments;
     }
 
@@ -452,13 +470,11 @@ class FabricLauncher extends AbstractModdedLauncher {
 
     builder.addCustomPlaceholders({
       'side': 'client',
-      'launcher_name': 'craft-fabric',
-      'launcher_version': '1.0.0',
+      'launcher_name': launcherName,
+      'launcher_version': launcherVersion,
     });
 
-    builder.addRawArguments(
-      '--tweakClass net.fabricmc.loader.impl.launch.knot.KnotClient',
-    );
+    builder.addRawArguments('--tweakClass $fabricTweakClass');
 
     try {
       final environmentVars = Platform.environment;
@@ -538,7 +554,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     String versionId,
     String arguments,
   ) async {
-    if (!versionId.startsWith('fabric-loader-')) {
+    if (!versionId.startsWith(fabricPrefix)) {
       return arguments;
     }
 
@@ -550,7 +566,7 @@ class FabricLauncher extends AbstractModdedLauncher {
       String minecraftVersion = versionParts.sublist(3).join('-');
 
       final requiredArguments = <String, String>{
-        '--tweakClass': 'net.fabricmc.loader.impl.launch.knot.KnotClient',
+        '--tweakClass': fabricTweakClass,
         '-Dfabric.loader.version=': loaderVersion,
         '-Dminecraft.version=': minecraftVersion,
       };

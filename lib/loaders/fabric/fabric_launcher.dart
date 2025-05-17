@@ -26,13 +26,13 @@ class FabricLauncher extends AbstractModdedLauncher {
   String get mavenBaseUrl => _mavenBaseUrl;
 
   @override
-  String get fabricMainClass => _fabricMainClass;
+  String get modLoaderMainClass => _fabricMainClass;
 
   @override
-  String get fabricTweakClass => _fabricTweakClass;
+  String get modLoaderTweakClass => _fabricTweakClass;
 
   @override
-  String get fabricPrefix => _fabricPrefix;
+  String get modLoaderPrefix => _fabricPrefix;
 
   @override
   String get launcherName => _launcherName;
@@ -105,7 +105,7 @@ class FabricLauncher extends AbstractModdedLauncher {
   ) async {
     debugPrint('$loaderName: Customizing Java arguments for $versionId');
 
-    if (!versionId.startsWith(fabricPrefix)) {
+    if (!versionId.startsWith(modLoaderPrefix)) {
       return versionInfo.arguments;
     }
 
@@ -144,7 +144,7 @@ class FabricLauncher extends AbstractModdedLauncher {
       'launcher_version': launcherVersion,
     });
 
-    builder.addRawArguments('--tweakClass $fabricTweakClass');
+    builder.addRawArguments('--tweakClass $modLoaderTweakClass');
 
     try {
       final environmentVars = Platform.environment;
@@ -229,7 +229,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     String versionId,
     String arguments,
   ) async {
-    if (!versionId.startsWith(fabricPrefix)) {
+    if (!versionId.startsWith(modLoaderPrefix)) {
       return arguments;
     }
 
@@ -241,7 +241,7 @@ class FabricLauncher extends AbstractModdedLauncher {
       String minecraftVersion = versionParts.sublist(3).join('-');
 
       final requiredArguments = <String, String>{
-        '--tweakClass': fabricTweakClass,
+        '--tweakClass': modLoaderTweakClass,
         '-Dfabric.loader.version=': loaderVersion,
         '-Dminecraft.version=': minecraftVersion,
       };

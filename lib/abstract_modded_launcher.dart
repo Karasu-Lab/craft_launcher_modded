@@ -28,9 +28,9 @@ abstract class AbstractModdedLauncher extends VanillaLauncher
 
   // Getters for constants
   String get mavenBaseUrl;
-  String get fabricMainClass;
-  String get fabricTweakClass;
-  String get fabricPrefix;
+  String get modLoaderMainClass;
+  String get modLoaderTweakClass;
+  String get modLoaderPrefix;
   String get launcherName;
   String get launcherVersion;
   String get loaderName;
@@ -58,7 +58,7 @@ abstract class AbstractModdedLauncher extends VanillaLauncher
     }
 
     String inheritsFrom = versionInfo?.inheritsFrom ?? versionInfo!.id;
-    if (!versionId.startsWith(fabricPrefix)) {
+    if (!versionId.startsWith(modLoaderPrefix)) {
       return;
     }
 
@@ -104,7 +104,7 @@ abstract class AbstractModdedLauncher extends VanillaLauncher
       return versionInfoCache[id] as T?;
     }
 
-    if (!id.startsWith(fabricPrefix)) {
+    if (!id.startsWith(modLoaderPrefix)) {
       debugPrint(
         '$loaderName: Not a $loaderName version, returning original version info',
       );
@@ -186,7 +186,7 @@ abstract class AbstractModdedLauncher extends VanillaLauncher
             id: id,
             inheritsFrom: inheritsFrom,
             type: versionInfo.type,
-            mainClass: fabricMainClass,
+            mainClass: modLoaderMainClass,
             arguments: parentVersionInfo.arguments,
             minecraftArguments: parentVersionInfo.minecraftArguments,
             assetIndex: parentVersionInfo.assetIndex,
@@ -290,7 +290,7 @@ abstract class AbstractModdedLauncher extends VanillaLauncher
     String versionId,
     T versionInfo,
   ) async {
-    if (!versionId.startsWith(fabricPrefix)) {
+    if (!versionId.startsWith(modLoaderPrefix)) {
       return false;
     }
 
@@ -312,7 +312,7 @@ abstract class AbstractModdedLauncher extends VanillaLauncher
   Future<String> getAssetIndex(String versionId) async {
     debugPrint('$loaderName: Getting asset index for $versionId');
 
-    if (!versionId.startsWith(fabricPrefix)) {
+    if (!versionId.startsWith(modLoaderPrefix)) {
       return super.getAssetIndex(versionId);
     }
 

@@ -21,13 +21,13 @@ class QuiltLauncher extends FabricLauncher {
   String get mavenBaseUrl => _quiltMavenBaseUrl;
 
   @override
-  String get fabricMainClass => _quiltMainClass;
+  String get modLoaderMainClass => _quiltMainClass;
 
   @override
-  String get fabricTweakClass => _quiltTweakClass;
+  String get modLoaderTweakClass => _quiltTweakClass;
 
   @override
-  String get fabricPrefix => _quiltPrefix;
+  String get modLoaderPrefix => _quiltPrefix;
 
   @override
   String get launcherName => _quiltLauncherName;

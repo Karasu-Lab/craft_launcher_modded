@@ -22,13 +22,29 @@ class FabricLauncher extends AbstractModdedLauncher {
   final String _launcherName = 'craft-fabric';
   final String _launcherVersion = '1.0.0';
 
+  final String _loaderName = 'Fabric';
+
   // Getters for constants
+  @override
   String get mavenBaseUrl => _mavenBaseUrl;
+
+  @override
   String get fabricMainClass => _fabricMainClass;
+
+  @override
   String get fabricTweakClass => _fabricTweakClass;
+
+  @override
   String get fabricPrefix => _fabricPrefix;
+
+  @override
   String get launcherName => _launcherName;
+
+  @override
   String get launcherVersion => _launcherVersion;
+
+  @override
+  String get loaderName => _loaderName;
 
   FabricLauncher({
     required super.gameDir,
@@ -67,7 +83,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     final versionJsonFile = File(versionJsonPath);
 
     if (!await versionJsonFile.exists()) {
-      debugPrint('Fabric version json not found, will create it later');
+      debugPrint('$loaderName version json not found, will create it later');
 
       debugPrint('Found base Minecraft version: $inheritsFrom');
 
@@ -93,16 +109,16 @@ class FabricLauncher extends AbstractModdedLauncher {
     if (versionInfo == null) return null;
 
     final id = versionInfo.id;
-    debugPrint('Fabric: Processing version manifest for $id');
+    debugPrint('$loaderName: Processing version manifest for $id');
 
     if (_fabricVersionCache.containsKey(id)) {
-      debugPrint('Fabric: Returning cached version info for $id');
+      debugPrint('$loaderName: Returning cached version info for $id');
       return _fabricVersionCache[id] as T?;
     }
 
     if (!id.startsWith(fabricPrefix)) {
       debugPrint(
-        'Fabric: Not a Fabric version, returning original version info',
+        '$loaderName: Not a $loaderName version, returning original version info',
       );
       return versionInfo;
     }
@@ -112,7 +128,7 @@ class FabricLauncher extends AbstractModdedLauncher {
 
     if (await versionJsonFile.exists()) {
       try {
-        debugPrint('Fabric: Reading existing version JSON file');
+        debugPrint('$loaderName: Reading existing version JSON file');
         final content = await versionJsonFile.readAsString();
         final json = jsonDecode(content);
 
@@ -120,30 +136,30 @@ class FabricLauncher extends AbstractModdedLauncher {
         _fabricVersionCache[id] = fabricVersionInfo;
 
         debugPrint(
-          'Fabric: Using existing Fabric JSON: inheritsFrom=${fabricVersionInfo.inheritsFrom}',
+          '$loaderName: Using existing Fabric JSON: inheritsFrom=${fabricVersionInfo.inheritsFrom}',
         );
 
         if (fabricVersionInfo.inheritsFrom != null) {
           debugPrint(
-            'Fabric: Ensuring parent version ${fabricVersionInfo.inheritsFrom} is available',
+            '$loaderName: Ensuring parent version ${fabricVersionInfo.inheritsFrom} is available',
           );
           final parentInfo = await super.fetchVersionManifest(
             fabricVersionInfo.inheritsFrom!,
           );
           if (parentInfo != null) {
-            debugPrint('Fabric: Parent version info is available');
+            debugPrint('$loaderName: Parent version info is available');
           }
         }
 
         return fabricVersionInfo as T?;
       } catch (e) {
-        debugPrint('Fabric: Error parsing version JSON: $e');
+        debugPrint('$loaderName: Error parsing version JSON: $e');
       }
     } else {
       var inheritsFrom = versionInfo.inheritsFrom;
       if (inheritsFrom != null) {
         debugPrint(
-          'Fabric: Creating version info based on parent version: $inheritsFrom',
+          '$loaderName: Creating version info based on parent version: $inheritsFrom',
         );
 
         try {
@@ -151,11 +167,11 @@ class FabricLauncher extends AbstractModdedLauncher {
             inheritsFrom,
           );
           if (parentVersionInfo == null) {
-            debugPrint('Fabric: Parent version info not found');
+            debugPrint('$loaderName: Parent version info not found');
             return versionInfo;
           }
 
-          debugPrint('Fabric: Parent version info retrieved successfully');
+          debugPrint('$loaderName: Parent version info retrieved successfully');
 
           List<String> versionParts = id.split('-');
           String loaderVersion = '';
@@ -165,10 +181,12 @@ class FabricLauncher extends AbstractModdedLauncher {
             loaderVersion = versionParts[2];
             minecraftVersion = versionParts.sublist(3).join('-');
             debugPrint(
-              'Fabric: Loader version: $loaderVersion, Minecraft version: $minecraftVersion',
+              '$loaderName: Loader version: $loaderVersion, Minecraft version: $minecraftVersion',
             );
           } else {
-            debugPrint('Fabric: Could not parse loader and Minecraft versions');
+            debugPrint(
+              '$loaderName: Could not parse loader and Minecraft versions',
+            );
           }
 
           final libraries = parentVersionInfo.libraries ?? [];
@@ -205,10 +223,10 @@ class FabricLauncher extends AbstractModdedLauncher {
           final jsonContent = jsonEncode(fabricVersionInfo.toJson());
           await versionJsonFile.writeAsString(jsonContent);
 
-          debugPrint('Fabric: Created and saved version JSON file');
+          debugPrint('$loaderName: Created and saved version JSON file');
           return fabricVersionInfo as T?;
         } catch (e) {
-          debugPrint('Fabric: Error creating version info: $e');
+          debugPrint('$loaderName: Error creating version info: $e');
         }
       }
     }
@@ -221,7 +239,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     VersionInfo versionInfo,
     String versionId,
   ) async {
-    debugPrint('Fabric: Building classpath for $versionId');
+    debugPrint('$loaderName: Building classpath for $versionId');
     final List<String> additionalClasspath = [];
 
     final fabricLibraries = versionInfo.libraries;
@@ -235,10 +253,12 @@ class FabricLauncher extends AbstractModdedLauncher {
             final libraryPath = getLibraryPath(coordinates, librariesDir);
             if (await File(libraryPath).exists()) {
               additionalClasspath.add(p.normalize(libraryPath));
-              debugPrint('Added Fabric library to classpath: $libraryPath');
+              debugPrint(
+                'Added $loaderName library to classpath: $libraryPath',
+              );
             } else {
               debugPrint(
-                'Fabric library not found, will attempt download: $libraryPath',
+                '$loaderName library not found, will attempt download: $libraryPath',
               );
               await downloadLibrary(
                 coordinates,
@@ -249,7 +269,7 @@ class FabricLauncher extends AbstractModdedLauncher {
               if (await File(libraryPath).exists()) {
                 additionalClasspath.add(p.normalize(libraryPath));
                 debugPrint(
-                  'Downloaded and added Fabric library to classpath: $libraryPath',
+                  'Downloaded and added $loaderName library to classpath: $libraryPath',
                 );
               }
             }
@@ -275,7 +295,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     String versionId,
     List<String> classpath,
   ) async {
-    debugPrint('Fabric: Finalizing classpath for $versionId');
+    debugPrint('$loaderName: Finalizing classpath for $versionId');
   }
 
   @override
@@ -287,9 +307,9 @@ class FabricLauncher extends AbstractModdedLauncher {
     String versionId,
     MinecraftAuth? auth,
   ) async {
-    debugPrint('Fabric: Preparing to start Minecraft with Fabric');
+    debugPrint('$loaderName: Preparing to start Minecraft with $loaderName');
 
-    environment['FABRIC_LOADER'] = 'true';
+    environment['${loaderName.toUpperCase()}_LOADER'] = 'true';
   }
 
   @override
@@ -298,7 +318,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     MinecraftProcessInfo processInfo,
     MinecraftAuth? auth,
   ) async {
-    debugPrint('Fabric: Minecraft with Fabric started successfully');
+    debugPrint('$loaderName: Minecraft with $loaderName started successfully');
   }
 
   @override
@@ -308,29 +328,29 @@ class FabricLauncher extends AbstractModdedLauncher {
 
   @override
   Future<void> afterDownloadClientJar(String versionId) async {
-    debugPrint('Fabric: Client JAR downloaded for base game');
+    debugPrint('$loaderName: Client JAR downloaded for base game');
   }
 
   @override
   Future<bool> beforeDownloadAssets(String versionId) async {
-    debugPrint('Fabric: Preparing to download assets');
-    return true;
+    debugPrint('$loaderName: Preparing to download assets');
+    return false;
   }
 
   @override
   Future<void> afterDownloadAssets(String versionId) async {
-    debugPrint('Fabric: Assets downloaded successfully');
+    debugPrint('$loaderName: Assets downloaded successfully');
   }
 
   @override
   Future<bool> beforeDownloadLibraries(String versionId) async {
-    debugPrint('Fabric: Preparing to download libraries');
+    debugPrint('$loaderName: Preparing to download libraries');
     return true;
   }
 
   @override
   Future<void> afterDownloadLibraries(String versionId) async {
-    debugPrint('Fabric: Libraries downloaded successfully');
+    debugPrint('$loaderName: Libraries downloaded successfully');
   }
 
   @override
@@ -342,12 +362,14 @@ class FabricLauncher extends AbstractModdedLauncher {
       return false;
     }
 
-    debugPrint('Fabric: Intercepting asset index retrieval for $versionId');
+    debugPrint(
+      '$loaderName: Intercepting asset index retrieval for $versionId',
+    );
 
     if (versionInfo is FabricVersionInfo && versionInfo.inheritsFrom != null) {
       final inheritsFrom = versionInfo.inheritsFrom!;
       debugPrint(
-        'Fabric: Using asset index from parent version: $inheritsFrom',
+        '$loaderName: Using asset index from parent version: $inheritsFrom',
       );
     }
 
@@ -370,7 +392,7 @@ class FabricLauncher extends AbstractModdedLauncher {
 
   @override
   Future<bool> beforeExtractNativeLibraries(String versionId) async {
-    debugPrint('Fabric: Preparing to extract native libraries');
+    debugPrint('$loaderName: Preparing to extract native libraries');
     return true;
   }
 
@@ -380,13 +402,13 @@ class FabricLauncher extends AbstractModdedLauncher {
     String nativesPath,
   ) async {
     debugPrint(
-      'Fabric: Native libraries extracted to $nativesPath for $versionId',
+      '$loaderName: Native libraries extracted to $nativesPath for $versionId',
     );
   }
 
   @override
   Future<String> getAssetIndex(String versionId) async {
-    debugPrint('Fabric: Getting asset index for $versionId');
+    debugPrint('$loaderName: Getting asset index for $versionId');
 
     if (!versionId.startsWith(fabricPrefix)) {
       return super.getAssetIndex(versionId);
@@ -397,15 +419,15 @@ class FabricLauncher extends AbstractModdedLauncher {
     if (fabricVersionInfo?.inheritsFrom != null) {
       final inheritsFrom = fabricVersionInfo!.inheritsFrom!;
       debugPrint(
-        'Fabric: Getting asset index from parent version: $inheritsFrom',
+        '$loaderName: Getting asset index from parent version: $inheritsFrom',
       );
 
       try {
         final parentAssetIndex = await super.getAssetIndex(inheritsFrom);
-        debugPrint('Fabric: Using parent asset index: $parentAssetIndex');
+        debugPrint('$loaderName: Using parent asset index: $parentAssetIndex');
         return parentAssetIndex;
       } catch (e) {
-        debugPrint('Fabric: Error getting parent asset index: $e');
+        debugPrint('$loaderName: Error getting parent asset index: $e');
       }
     }
 
@@ -413,17 +435,21 @@ class FabricLauncher extends AbstractModdedLauncher {
     if (inheritsFrom != null) {
       try {
         debugPrint(
-          'Fabric: Trying to get asset index from base version: $inheritsFrom',
+          '$loaderName: Trying to get asset index from base version: $inheritsFrom',
         );
         final baseAssetIndex = await super.getAssetIndex(inheritsFrom);
-        debugPrint('Fabric: Using base version asset index: $baseAssetIndex');
+        debugPrint(
+          '$loaderName: Using base version asset index: $baseAssetIndex',
+        );
         return baseAssetIndex;
       } catch (e) {
-        debugPrint('Fabric: Error getting base version asset index: $e');
+        debugPrint('$loaderName: Error getting base version asset index: $e');
       }
     }
 
-    debugPrint('Fabric: Falling back to vanilla asset index implementation');
+    debugPrint(
+      '$loaderName: Falling back to vanilla asset index implementation',
+    );
     return super.getAssetIndex(versionId);
   }
 
@@ -433,7 +459,7 @@ class FabricLauncher extends AbstractModdedLauncher {
     JavaArgumentsBuilder builder,
     VersionInfo versionInfo,
   ) async {
-    debugPrint('Fabric: Customizing Java arguments for $versionId');
+    debugPrint('$loaderName: Customizing Java arguments for $versionId');
 
     if (!versionId.startsWith(fabricPrefix)) {
       return versionInfo.arguments;
@@ -442,13 +468,13 @@ class FabricLauncher extends AbstractModdedLauncher {
     String? inheritsFrom = versionInfo.inheritsFrom;
     if (inheritsFrom == null) {
       debugPrint(
-        'Fabric: No parent version found, returning original arguments',
+        '$loaderName: No parent version found, returning original arguments',
       );
       return versionInfo.arguments;
     }
 
     debugPrint(
-      'Fabric: Adding placeholders from parent version: $inheritsFrom',
+      '$loaderName: Adding placeholders from parent version: $inheritsFrom',
     );
 
     List<String> versionParts = versionId.split('-');
@@ -464,7 +490,7 @@ class FabricLauncher extends AbstractModdedLauncher {
 
       builder.addCustomPlaceholders(fabricPlaceholders);
       debugPrint(
-        'Fabric: Added Fabric-specific placeholders: $fabricPlaceholders',
+        '$loaderName: Added $loaderName-specific placeholders: $fabricPlaceholders',
       );
     }
 
@@ -481,17 +507,20 @@ class FabricLauncher extends AbstractModdedLauncher {
       final envPlaceholders = <String, String>{};
 
       environmentVars.forEach((key, value) {
-        if (key.startsWith('FABRIC_') || key.startsWith('MINECRAFT_')) {
+        if (key.startsWith('${loaderName.toUpperCase()}_') ||
+            key.startsWith('MINECRAFT_')) {
           envPlaceholders['env_$key'] = value;
         }
       });
 
       if (envPlaceholders.isNotEmpty) {
         builder.addCustomPlaceholders(envPlaceholders);
-        debugPrint('Fabric: Added environment placeholders: $envPlaceholders');
+        debugPrint(
+          '$loaderName: Added environment placeholders: $envPlaceholders',
+        );
       }
     } catch (e) {
-      debugPrint('Fabric: Error adding environment placeholders: $e');
+      debugPrint('$loaderName: Error adding environment placeholders: $e');
     }
 
     Arguments? mergedArguments;
@@ -499,7 +528,7 @@ class FabricLauncher extends AbstractModdedLauncher {
       final parentVersionInfo = await fetchVersionManifest(inheritsFrom);
       if (parentVersionInfo != null) {
         debugPrint(
-          'Fabric: Retrieved parent version info: ${parentVersionInfo.id}',
+          '$loaderName: Retrieved parent version info: ${parentVersionInfo.id}',
         );
 
         Map<String, String> parentPlaceholders = {
@@ -509,12 +538,12 @@ class FabricLauncher extends AbstractModdedLauncher {
 
         builder.addCustomPlaceholders(parentPlaceholders);
         debugPrint(
-          'Fabric: Added parent version placeholders: $parentPlaceholders',
+          '$loaderName: Added parent version placeholders: $parentPlaceholders',
         );
 
         if (parentVersionInfo.arguments != null) {
           if (versionInfo.arguments == null) {
-            debugPrint('Fabric: Using parent version arguments as base');
+            debugPrint('$loaderName: Using parent version arguments as base');
             mergedArguments = parentVersionInfo.arguments;
           } else {
             mergedArguments = builder.mergeArguments(
@@ -524,26 +553,28 @@ class FabricLauncher extends AbstractModdedLauncher {
             );
 
             debugPrint(
-              'Fabric: Successfully merged arguments from both versions',
+              '$loaderName: Successfully merged arguments from both versions',
             );
           }
         } else if (parentVersionInfo.minecraftArguments != null) {
-          debugPrint('Fabric: Parent uses legacy minecraftArguments format');
+          debugPrint(
+            '$loaderName: Parent uses legacy minecraftArguments format',
+          );
           builder.setMinecraftArguments(parentVersionInfo.minecraftArguments!);
         }
 
         if (parentVersionInfo.arguments == null &&
             versionInfo.arguments != null) {
           debugPrint(
-            'Fabric: Parent has no arguments, using current version arguments',
+            '$loaderName: Parent has no arguments, using current version arguments',
           );
           mergedArguments = versionInfo.arguments;
         }
       } else {
-        debugPrint('Fabric: Parent version info not found for arguments');
+        debugPrint('$loaderName: Parent version info not found for arguments');
       }
     } catch (e) {
-      debugPrint('Fabric: Error processing parent version arguments: $e');
+      debugPrint('$loaderName: Error processing parent version arguments: $e');
     }
 
     return mergedArguments ?? versionInfo.arguments;
@@ -558,7 +589,7 @@ class FabricLauncher extends AbstractModdedLauncher {
       return arguments;
     }
 
-    debugPrint('Fabric: Post-processing Java arguments');
+    debugPrint('$loaderName: Post-processing Java arguments');
 
     List<String> versionParts = versionId.split('-');
     if (versionParts.length >= 4) {
@@ -576,7 +607,7 @@ class FabricLauncher extends AbstractModdedLauncher {
 
       requiredArguments.forEach((prefix, value) {
         if (!_containsArgument(argsList, prefix)) {
-          debugPrint('Fabric: Adding missing argument: $prefix$value');
+          debugPrint('$loaderName: Adding missing argument: $prefix$value');
 
           if (prefix == '--tweakClass') {
             argsList.add(prefix);
@@ -595,7 +626,9 @@ class FabricLauncher extends AbstractModdedLauncher {
 
       fabricSystemProps.forEach((prefix, value) {
         if (!_containsArgument(argsList, prefix)) {
-          debugPrint('Fabric: Adding Fabric system property: $prefix$value');
+          debugPrint(
+            '$loaderName: Adding $loaderName system property: $prefix$value',
+          );
           argsList.add('$prefix$value');
           modified = true;
         }
@@ -603,11 +636,13 @@ class FabricLauncher extends AbstractModdedLauncher {
 
       if (modified) {
         arguments = _buildArgumentsString(argsList);
-        debugPrint('Fabric: Modified arguments for Fabric compatibility');
+        debugPrint(
+          '$loaderName: Modified arguments for $loaderName compatibility',
+        );
       }
     }
 
-    debugPrint('Fabric: Final arguments: $arguments');
+    debugPrint('$loaderName: Final arguments: $arguments');
     return arguments;
   }
 
@@ -647,18 +682,6 @@ class FabricLauncher extends AbstractModdedLauncher {
     for (final arg in argsList) {
       if (arg.startsWith(prefix)) {
         return true;
-      }
-
-      if (prefix == '--tweakClass' && arg == prefix) {
-        final index = argsList.indexOf(arg);
-        if (index < argsList.length - 1) {
-          final nextArg = argsList[index + 1];
-          if (nextArg.contains(
-            'net.fabricmc.loader.impl.launch.knot.KnotClient',
-          )) {
-            return true;
-          }
-        }
       }
     }
     return false;

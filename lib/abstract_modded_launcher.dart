@@ -22,6 +22,15 @@ abstract class AbstractModdedLauncher extends VanillaLauncher
     super.progressReportRate,
   });
 
+  // Getters for constants
+  String get mavenBaseUrl;
+  String get fabricMainClass;
+  String get fabricTweakClass;
+  String get fabricPrefix;
+  String get launcherName;
+  String get launcherVersion;
+  String get loaderName;
+
   @override
   bool isModded() {
     return true;

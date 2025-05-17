@@ -1,13 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:craft_launcher_core/craft_launcher_core.dart';
 import 'package:craft_launcher_core/java_arguments/java_arguments_builder.dart';
-import 'package:craft_launcher_core/processes/process_manager.dart';
 import 'package:craft_launcher_modded/abstract_modded_launcher.dart';
 import 'package:craft_launcher_modded/models/fabric/fabric_version_info.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as p;
 
 class FabricLauncher extends AbstractModdedLauncher {
   final Map<String, FabricVersionInfo> _fabricVersionCache = {};
@@ -46,6 +43,12 @@ class FabricLauncher extends AbstractModdedLauncher {
   @override
   String get loaderName => _loaderName;
 
+  @override
+  Map<String, VersionInfo> get versionInfoCache => _fabricVersionCache;
+
+  @override
+  String get loaderLibraryPackage => 'net.fabricmc:fabric-loader';
+
   FabricLauncher({
     required super.gameDir,
     required super.javaDir,
@@ -62,273 +65,8 @@ class FabricLauncher extends AbstractModdedLauncher {
   });
 
   @override
-  Future<void> beforeFetchVersionManifest(String versionId) async {
-    var versionInfo = await getVersionInfo(versionId);
-
-    if (versionInfo?.inheritsFrom == null) {
-      return;
-    }
-
-    String inheritsFrom = versionInfo?.inheritsFrom ?? versionInfo!.id;
-    if (!versionId.startsWith(fabricPrefix)) {
-      return;
-    }
-
-    final versionJsonPath = p.join(
-      getGameDir(),
-      'versions',
-      versionId,
-      '$versionId.json',
-    );
-    final versionJsonFile = File(versionJsonPath);
-
-    if (!await versionJsonFile.exists()) {
-      debugPrint('$loaderName version json not found, will create it later');
-
-      debugPrint('Found base Minecraft version: $inheritsFrom');
-
-      final baseVersionJsonPath = p.join(
-        getGameDir(),
-        'versions',
-        inheritsFrom,
-        '$inheritsFrom.json',
-      );
-      final baseVersionJsonFile = File(baseVersionJsonPath);
-
-      if (!await baseVersionJsonFile.exists()) {
-        debugPrint('Base version JSON not found, downloading vanilla first');
-      }
-    }
-  }
-
-  @override
-  Future<T?> afterFetchVersionManifest<T extends VersionInfo>(
-    String versionId,
-    T? versionInfo,
-  ) async {
-    if (versionInfo == null) return null;
-
-    final id = versionInfo.id;
-    debugPrint('$loaderName: Processing version manifest for $id');
-
-    if (_fabricVersionCache.containsKey(id)) {
-      debugPrint('$loaderName: Returning cached version info for $id');
-      return _fabricVersionCache[id] as T?;
-    }
-
-    if (!id.startsWith(fabricPrefix)) {
-      debugPrint(
-        '$loaderName: Not a $loaderName version, returning original version info',
-      );
-      return versionInfo;
-    }
-
-    final versionJsonPath = p.join(getGameDir(), 'versions', id, '$id.json');
-    final versionJsonFile = File(versionJsonPath);
-
-    if (await versionJsonFile.exists()) {
-      try {
-        debugPrint('$loaderName: Reading existing version JSON file');
-        final content = await versionJsonFile.readAsString();
-        final json = jsonDecode(content);
-
-        final fabricVersionInfo = FabricVersionInfo.fromJson(json);
-        _fabricVersionCache[id] = fabricVersionInfo;
-
-        debugPrint(
-          '$loaderName: Using existing Fabric JSON: inheritsFrom=${fabricVersionInfo.inheritsFrom}',
-        );
-
-        if (fabricVersionInfo.inheritsFrom != null) {
-          debugPrint(
-            '$loaderName: Ensuring parent version ${fabricVersionInfo.inheritsFrom} is available',
-          );
-          final parentInfo = await super.fetchVersionManifest(
-            fabricVersionInfo.inheritsFrom!,
-          );
-          if (parentInfo != null) {
-            debugPrint('$loaderName: Parent version info is available');
-          }
-        }
-
-        return fabricVersionInfo as T?;
-      } catch (e) {
-        debugPrint('$loaderName: Error parsing version JSON: $e');
-      }
-    } else {
-      var inheritsFrom = versionInfo.inheritsFrom;
-      if (inheritsFrom != null) {
-        debugPrint(
-          '$loaderName: Creating version info based on parent version: $inheritsFrom',
-        );
-
-        try {
-          final parentVersionInfo = await super.fetchVersionManifest(
-            inheritsFrom,
-          );
-          if (parentVersionInfo == null) {
-            debugPrint('$loaderName: Parent version info not found');
-            return versionInfo;
-          }
-
-          debugPrint('$loaderName: Parent version info retrieved successfully');
-
-          List<String> versionParts = id.split('-');
-          String loaderVersion = '';
-          String minecraftVersion = '';
-
-          if (versionParts.length >= 4) {
-            loaderVersion = versionParts[2];
-            minecraftVersion = versionParts.sublist(3).join('-');
-            debugPrint(
-              '$loaderName: Loader version: $loaderVersion, Minecraft version: $minecraftVersion',
-            );
-          } else {
-            debugPrint(
-              '$loaderName: Could not parse loader and Minecraft versions',
-            );
-          }
-
-          final libraries = parentVersionInfo.libraries ?? [];
-          final fabricLibraries = <FabricLibrary>[];
-
-          fabricLibraries.add(
-            FabricLibrary(
-              name: 'net.fabricmc:fabric-loader:$loaderVersion',
-              url: mavenBaseUrl,
-            ),
-          );
-
-          final fabricVersionInfo = FabricVersionInfo(
-            id: id,
-            inheritsFrom: inheritsFrom,
-            type: versionInfo.type,
-            mainClass: fabricMainClass,
-            arguments: parentVersionInfo.arguments,
-            minecraftArguments: parentVersionInfo.minecraftArguments,
-            assetIndex: parentVersionInfo.assetIndex,
-            assets: parentVersionInfo.assets,
-            javaVersion: parentVersionInfo.javaVersion,
-            libraries: libraries,
-            fabricLibraries: fabricLibraries,
-          );
-
-          _fabricVersionCache[id] = fabricVersionInfo;
-
-          final versionDir = Directory(p.dirname(versionJsonPath));
-          if (!await versionDir.exists()) {
-            await versionDir.create(recursive: true);
-          }
-
-          final jsonContent = jsonEncode(fabricVersionInfo.toJson());
-          await versionJsonFile.writeAsString(jsonContent);
-
-          debugPrint('$loaderName: Created and saved version JSON file');
-          return fabricVersionInfo as T?;
-        } catch (e) {
-          debugPrint('$loaderName: Error creating version info: $e');
-        }
-      }
-    }
-
-    return versionInfo;
-  }
-
-  @override
-  Future<List<String>> beforeBuildClasspath(
-    VersionInfo versionInfo,
-    String versionId,
-  ) async {
-    debugPrint('$loaderName: Building classpath for $versionId');
-    final List<String> additionalClasspath = [];
-
-    final fabricLibraries = versionInfo.libraries;
-    if (fabricLibraries != null) {
-      final librariesDir = p.join(getGameDir(), 'libraries');
-
-      for (var library in fabricLibraries) {
-        if (library.name != null) {
-          final coordinates = parseLibraryName(library.name!);
-          if (coordinates != null) {
-            final libraryPath = getLibraryPath(coordinates, librariesDir);
-            if (await File(libraryPath).exists()) {
-              additionalClasspath.add(p.normalize(libraryPath));
-              debugPrint(
-                'Added $loaderName library to classpath: $libraryPath',
-              );
-            } else {
-              debugPrint(
-                '$loaderName library not found, will attempt download: $libraryPath',
-              );
-              await downloadLibrary(
-                coordinates,
-                libraryPath,
-                mavenBaseUrl,
-                library.url,
-              );
-              if (await File(libraryPath).exists()) {
-                additionalClasspath.add(p.normalize(libraryPath));
-                debugPrint(
-                  'Downloaded and added $loaderName library to classpath: $libraryPath',
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (versionInfo.inheritsFrom != null) {
-      var info =
-          await fetchVersionManifest(versionInfo.inheritsFrom!) as VersionInfo;
-      additionalClasspath.addAll(
-        await classpathManager.buildClasspath(info, info.id),
-      );
-    }
-
-    return classpathManager.removeDuplicateLibraries(additionalClasspath);
-  }
-
-  @override
-  Future<void> afterBuildClasspath(
-    VersionInfo versionInfo,
-    String versionId,
-    List<String> classpath,
-  ) async {
-    debugPrint('$loaderName: Finalizing classpath for $versionId');
-  }
-
-  @override
-  Future<void> beforeStartProcess(
-    String javaExe,
-    List<String> javaArgs,
-    String workingDirectory,
-    Map<String, String> environment,
-    String versionId,
-    MinecraftAuth? auth,
-  ) async {
-    debugPrint('$loaderName: Preparing to start Minecraft with $loaderName');
-
-    environment['${loaderName.toUpperCase()}_LOADER'] = 'true';
-  }
-
-  @override
-  Future<void> afterStartProcess(
-    String versionId,
-    MinecraftProcessInfo processInfo,
-    MinecraftAuth? auth,
-  ) async {
-    debugPrint('$loaderName: Minecraft with $loaderName started successfully');
-  }
-
-  @override
   Future<bool> beforeDownloadClientJar(String versionId) async {
     return true;
-  }
-
-  @override
-  Future<void> afterDownloadClientJar(String versionId) async {
-    debugPrint('$loaderName: Client JAR downloaded for base game');
   }
 
   @override
@@ -338,56 +76,9 @@ class FabricLauncher extends AbstractModdedLauncher {
   }
 
   @override
-  Future<void> afterDownloadAssets(String versionId) async {
-    debugPrint('$loaderName: Assets downloaded successfully');
-  }
-
-  @override
   Future<bool> beforeDownloadLibraries(String versionId) async {
     debugPrint('$loaderName: Preparing to download libraries');
     return true;
-  }
-
-  @override
-  Future<void> afterDownloadLibraries(String versionId) async {
-    debugPrint('$loaderName: Libraries downloaded successfully');
-  }
-
-  @override
-  Future<bool> beforeGetAssetIndex<T extends VersionInfo>(
-    String versionId,
-    T versionInfo,
-  ) async {
-    if (!versionId.startsWith(fabricPrefix)) {
-      return false;
-    }
-
-    debugPrint(
-      '$loaderName: Intercepting asset index retrieval for $versionId',
-    );
-
-    if (versionInfo is FabricVersionInfo && versionInfo.inheritsFrom != null) {
-      final inheritsFrom = versionInfo.inheritsFrom!;
-      debugPrint(
-        '$loaderName: Using asset index from parent version: $inheritsFrom',
-      );
-    }
-
-    return false;
-  }
-
-  @override
-  String? getCustomAssetIndexPath(String versionId, String assetIndex) {
-    if (!versionId.startsWith(fabricPrefix)) {
-      return null;
-    }
-
-    return null;
-  }
-
-  @override
-  String? getCustomAssetsDirectory() {
-    return null;
   }
 
   @override
@@ -404,53 +95,6 @@ class FabricLauncher extends AbstractModdedLauncher {
     debugPrint(
       '$loaderName: Native libraries extracted to $nativesPath for $versionId',
     );
-  }
-
-  @override
-  Future<String> getAssetIndex(String versionId) async {
-    debugPrint('$loaderName: Getting asset index for $versionId');
-
-    if (!versionId.startsWith(fabricPrefix)) {
-      return super.getAssetIndex(versionId);
-    }
-
-    final fabricVersionInfo = await fetchVersionManifest(versionId);
-
-    if (fabricVersionInfo?.inheritsFrom != null) {
-      final inheritsFrom = fabricVersionInfo!.inheritsFrom!;
-      debugPrint(
-        '$loaderName: Getting asset index from parent version: $inheritsFrom',
-      );
-
-      try {
-        final parentAssetIndex = await super.getAssetIndex(inheritsFrom);
-        debugPrint('$loaderName: Using parent asset index: $parentAssetIndex');
-        return parentAssetIndex;
-      } catch (e) {
-        debugPrint('$loaderName: Error getting parent asset index: $e');
-      }
-    }
-
-    var inheritsFrom = fabricVersionInfo?.inheritsFrom;
-    if (inheritsFrom != null) {
-      try {
-        debugPrint(
-          '$loaderName: Trying to get asset index from base version: $inheritsFrom',
-        );
-        final baseAssetIndex = await super.getAssetIndex(inheritsFrom);
-        debugPrint(
-          '$loaderName: Using base version asset index: $baseAssetIndex',
-        );
-        return baseAssetIndex;
-      } catch (e) {
-        debugPrint('$loaderName: Error getting base version asset index: $e');
-      }
-    }
-
-    debugPrint(
-      '$loaderName: Falling back to vanilla asset index implementation',
-    );
-    return super.getAssetIndex(versionId);
   }
 
   @override
@@ -602,11 +246,11 @@ class FabricLauncher extends AbstractModdedLauncher {
         '-Dminecraft.version=': minecraftVersion,
       };
 
-      List<String> argsList = _parseArgumentsString(arguments);
+      List<String> argsList = parseArgumentsString(arguments);
       bool modified = false;
 
       requiredArguments.forEach((prefix, value) {
-        if (!_containsArgument(argsList, prefix)) {
+        if (!containsArgument(argsList, prefix)) {
           debugPrint('$loaderName: Adding missing argument: $prefix$value');
 
           if (prefix == '--tweakClass') {
@@ -625,7 +269,7 @@ class FabricLauncher extends AbstractModdedLauncher {
       };
 
       fabricSystemProps.forEach((prefix, value) {
-        if (!_containsArgument(argsList, prefix)) {
+        if (!containsArgument(argsList, prefix)) {
           debugPrint(
             '$loaderName: Adding $loaderName system property: $prefix$value',
           );
@@ -635,7 +279,7 @@ class FabricLauncher extends AbstractModdedLauncher {
       });
 
       if (modified) {
-        arguments = _buildArgumentsString(argsList);
+        arguments = buildArgumentsString(argsList);
         debugPrint(
           '$loaderName: Modified arguments for $loaderName compatibility',
         );
@@ -644,46 +288,5 @@ class FabricLauncher extends AbstractModdedLauncher {
 
     debugPrint('$loaderName: Final arguments: $arguments');
     return arguments;
-  }
-
-  List<String> _parseArgumentsString(String argsString) {
-    List<String> result = [];
-    bool inQuotes = false;
-    StringBuffer currentArg = StringBuffer();
-
-    for (int i = 0; i < argsString.length; i++) {
-      final char = argsString[i];
-
-      if (char == '"') {
-        inQuotes = !inQuotes;
-        currentArg.write(char);
-      } else if (char == ' ' && !inQuotes) {
-        if (currentArg.isNotEmpty) {
-          result.add(currentArg.toString());
-          currentArg.clear();
-        }
-      } else {
-        currentArg.write(char);
-      }
-    }
-
-    if (currentArg.isNotEmpty) {
-      result.add(currentArg.toString());
-    }
-
-    return result;
-  }
-
-  String _buildArgumentsString(List<String> argsList) {
-    return argsList.join(' ');
-  }
-
-  bool _containsArgument(List<String> argsList, String prefix) {
-    for (final arg in argsList) {
-      if (arg.startsWith(prefix)) {
-        return true;
-      }
-    }
-    return false;
   }
 }

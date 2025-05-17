@@ -5,7 +5,7 @@ part 'fabric_version_info.g.dart';
 
 @JsonSerializable()
 class FabricVersionInfo extends VersionInfo {
-  List<FabricLibrary>? _fabricLibraries;
+  List<Library>? _fabricLibraries;
 
   FabricVersionInfo({
     required super.id,
@@ -24,10 +24,10 @@ class FabricVersionInfo extends VersionInfo {
     super.minimumLauncherVersion,
     super.releaseTime,
     super.time,
-    List<FabricLibrary>? fabricLibraries,
+    List<Library>? fabricLibraries,
   }) : _fabricLibraries = fabricLibraries;
 
-  List<FabricLibrary>? get fabricLibraries => _fabricLibraries;
+  List<Library>? get fabricLibraries => _fabricLibraries;
 
   factory FabricVersionInfo.fromJson(Map<String, dynamic> json) {
     final librariesData = json['libraries'] as List<dynamic>?;
@@ -63,14 +63,12 @@ class FabricVersionInfo extends VersionInfo {
 }
 
 @JsonSerializable()
-class FabricLibrary {
-  final String? name;
-  final String? url;
-
-  FabricLibrary({this.name, this.url});
+class FabricLibrary extends Library {
+  FabricLibrary({super.name, super.url});
 
   factory FabricLibrary.fromJson(Map<String, dynamic> json) =>
       _$FabricLibraryFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$FabricLibraryToJson(this);
 }
